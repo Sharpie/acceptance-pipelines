@@ -1,0 +1,236 @@
+---
+name: Beaker Acceptance Pipeline for OpenVox
+run-name: |-
+  Beaker acceptance tests for all openvox projects using
+  ${{ inputs.pre-release-build && 'pre-release' || 'release' }}
+  packages of openvox-agent
+  ${{ (inputs.pre-release-build && inputs.openvox-agent-version) ||
+      format(' collection: "{0}", version: "{1}" ',
+             inputs.collection,
+             ((inputs.openvox-agent-version == '') && 'latest') ||
+              inputs.openvox-agent-version) }}
+  , openvox-server
+  ${{ (inputs.pre-release-build && inputs.openvox-server-version) ||
+      format(' collection: "{0}", version: "{1}" ',
+             inputs.collection,
+             ((inputs.openvox-server-version == '') && 'latest') ||
+              inputs.openvox-server-version) }}
+  and openvoxdb
+  ${{ (inputs.pre-release-build && inputs.openvoxdb-version) ||
+      format(' collection: "{0}", version: "{1}" ',
+             inputs.collection,
+             ((inputs.openvoxdb-version == '') && 'latest') ||
+              inputs.openvoxdb-version) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      openvox-ref:
+        description: |-
+          (Openvox Ref) The git ref of the openvox acceptance suite to
+          run.
+
+          If testing something from openvox8, this should be a ref off
+          of main.
+
+          If testing something from openvox7, this should be a ref off
+          of the 7.x branch.
+        required: true
+        type: string
+        default: main
+      openvox-agent-ref:
+        description: |-
+          (Openvox-Agent Ref) The git ref of the openvox-agent
+          acceptance suite to run.
+
+          (see openvox-ref for details)
+        required: true
+        type: string
+        default: main
+      openvox-server-ref:
+        description: |-
+          (Openvox-Server Ref) The git ref of the openvox-server
+          acceptance suite to run.
+
+          (see openvox-ref for details)
+        required: true
+        type: string
+        default: main
+      pre-release-build:
+        description: |-
+          (Pre-release Build) Whether to test unreleased version
+          packages from the artifacts server, or released packages
+          from the given collection.
+
+          If this is true, versions must be valid version numbers,
+          not latest, and collection is ignored. The workflow will
+          download and install the matching openvox package files
+          from the artifacts-url server.
+
+          If this is false, version and collection must match, and the
+          workflow will install the given openvox collection package
+          and then let the system package manager install the latest
+          or version packages from the collection repository.
+        default: true
+        type: boolean
+      openvox-agent-version:
+        description: |-
+          (OpenVox Agent Version) The openvox-agent package version to
+          test. (required if Pre-release Build is true)
+        type: string
+      openvox-server-version:
+        description: |-
+          (OpenVox Server Version) The openvox-server package version
+          to test. (required if Pre-release Build is true)
+        type: string
+      openvoxdb-version:
+        description: |-
+          (OpenVoxDB Version) The openvoxdb package version
+          to test. (required if Pre-release Build is true)
+        type: string
+      collection:
+        description: |-
+          (Collection) OpenVox collection to use. (ignored if
+          Pre-release Build is true)
+
+          If testing something from main, this should be openvox8.
+          If testing something from 7.x, this should be openvox7.
+        default: 'openvox8'
+        type: string
+      artifacts-url:
+        description: |-
+          URL to the artifacts server. (used if Pre-release Build is
+          true)
+        default: 'https://s3.osuosl.org/openvox-artifacts'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - name: openvox
+            ref: ${{ inputs.openvox-ref }}
+            install-openvox-server: true
+            install-openvoxdb: false
+            acceptance-working-dir: 'acceptance'
+            acceptance-pre-suite: |-
+              [
+                "pre-suite"
+              ]
+            acceptance-tests: |-
+              [
+                "tests"
+              ]
+            beaker-options: |-
+              {
+                "helper":       "lib/helper.rb",
+                "options_file": "config/aio/options.rb"
+              }
+            vms: |-
+              [
+                {
+                  "role": "primary",
+                  "count": 1,
+                  "cpus": 4,
+                  "mem_mb": 8192,
+                  "cpu_mode": "host-model"
+                }
+              ]
+          - name: openvox-agent
+            ref: ${{ inputs.openvox-agent-ref }}
+            install-openvox-server: false
+            install-openvoxdb: false
+            acceptance-working-dir: 'acceptance'
+            acceptance-pre-suite: |-
+              [
+                "pre-suite/configure_type_defaults.rb"
+              ]
+            acceptance-tests: |-
+              [
+                "tests"
+              ]
+            beaker-options: |-
+              {
+                "helper":       "lib/helper.rb"
+              }
+            vms: |-
+              [
+                {
+                  "role": "agent",
+                  "count": 1,
+                  "cpus": 2,
+                  "mem_mb": 4096,
+                  "cpu_mode": "host-model"
+                }
+              ]
+          - name: openvox-server
+            ref: ${{ inputs.openvox-server-ref }}
+            install-openvox-server: true
+            install-openvoxdb: true
+            acceptance-working-dir: './'
+            acceptance-pre-suite: |-
+              [
+                "acceptance/suites/pre_suite/openvox/configure_type_defaults.rb",
+                "acceptance/suites/pre_suite/foss/00_setup_environment.rb",
+                "acceptance/suites/pre_suite/foss/070_InstallCACerts.rb",
+                "acceptance/suites/pre_suite/foss/10_update_ca_certs.rb",
+                "acceptance/suites/pre_suite/foss/15_prep_locales.rb",
+                "acceptance/suites/pre_suite/foss/71_smoke_test_puppetserver.rb",
+                "acceptance/suites/pre_suite/foss/80_configure_puppet.rb",
+                "acceptance/suites/pre_suite/foss/85_configure_sut.rb",
+                "acceptance/suites/pre_suite/foss/90_validate_sign_cert.rb",
+                "acceptance/suites/pre_suite/foss/95_install_pdb.rb",
+                "acceptance/suites/pre_suite/foss/99_collect_data.rb"
+              ]
+            acceptance-tests: |-
+              [
+                "acceptance/suites/tests"
+              ]
+            beaker-options: |-
+              {
+                "helper":       "acceptance/lib/helper.rb",
+                "load_path":    "acceptance/lib",
+                "options_file": "acceptance/config/beaker/options.rb"
+              }
+            vms: |-
+              [
+                {
+                  "role": "primary",
+                  "count": 1,
+                  "cpus": 4,
+                  "mem_mb": 8192,
+                  "cpu_mode": "host-model"
+                },
+                {
+                  "role": "agent",
+                  "count": 1,
+                  "cpus": 2,
+                  "mem_mb": 2048,
+                  "cpu_mode": "host-model"
+                }
+              ]
+    uses: 'openvoxproject/shared-actions/.github/workflows/beaker_acceptance.yml@main'
+    with:
+      ref: ${{ matrix.project.ref }}
+      project-name: ${{ matrix.project.name }}
+      install-openvox: true
+      openvox-collection: ${{ inputs.collection }}
+      openvox-agent-version: ${{ inputs.openvox-agent-version }}
+      openvox-agent-pre-release-build: ${{ inputs.pre-release-build }}
+      install-openvox-server: ${{ matrix.project.install-openvox-server }}
+      openvox-server-version: ${{ inputs.openvox-server-version }}
+      openvox-server-pre-release-build: ${{ inputs.pre-release-build }}
+      install-openvoxdb: ${{ matrix.project.install-openvoxdb }}
+      openvoxdb-version: ${{ inputs.openvoxdb-version }}
+      openvoxdb-pre-release-build: ${{ inputs.pre-release-build }}
+      artifacts-url: ${{ inputs.artifacts-url }}
+      acceptance-working-dir: ${{ matrix.project.acceptance-working-dir }}
+      acceptance-pre-suite: ${{ matrix.project.acceptance-pre-suite }}
+      acceptance-tests: ${{ matrix.project.acceptance-tests }}
+      beaker-options: ${{ matrix.project.beaker-options }}
+      vms: ${{ matrix.project.vms }}
