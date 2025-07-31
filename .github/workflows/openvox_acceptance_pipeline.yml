@@ -56,6 +56,15 @@ on:
         required: true
         type: string
         default: main
+      openvoxdb-ref:
+        description: |-
+          (Openvoxdb Ref) The git ref of the openvoxdb
+          acceptance suite to run.
+
+          (see openvox-ref for details)
+        required: true
+        type: string
+        default: main
       pre-release-build:
         description: |-
           (Pre-release Build) Whether to test unreleased version
@@ -196,6 +205,50 @@ jobs:
                 "helper":       "acceptance/lib/helper.rb",
                 "load_path":    "acceptance/lib",
                 "options_file": "acceptance/config/beaker/options.rb"
+              }
+            vms: |-
+              [
+                {
+                  "role": "primary",
+                  "count": 1,
+                  "cpus": 4,
+                  "mem_mb": 8192,
+                  "cpu_mode": "host-model"
+                },
+                {
+                  "role": "agent",
+                  "count": 1,
+                  "cpus": 2,
+                  "mem_mb": 2048,
+                  "cpu_mode": "host-model"
+                }
+              ]
+          - name: openvoxdb
+            ref: ${{ inputs.openvoxdb-ref }}
+            install-openvox-server: true
+            install-openvoxdb: true
+            acceptance-working-dir: './'
+            acceptance-pre-suite: |-
+              [
+                "acceptance/setup/openvox/configure_type_defaults.rb",
+                "acceptance/setup/pre_suite/00_setup_test_env.rb",
+                "acceptance/setup/pre_suite/10_setup_proxies.rb",
+                "acceptance/setup/pre_suite/20_install_puppet.rb",
+                "acceptance/setup/pre_suite/30_generate_ssl_certs.rb",
+                "acceptance/setup/pre_suite/40_install_deps.rb",
+                "acceptance/setup/pre_suite/50_install_modules.rb",
+                "acceptance/setup/pre_suite/75_clean_out_puppet5_repos.rb",
+                "acceptance/setup/pre_suite/80_add_dev_repo.rb",
+                "acceptance/setup/openvox/configure_openvoxdb.rb"
+              ]
+            acceptance-tests: |-
+              [
+                "acceptance/tests"
+              ]
+            beaker-options: |-
+              {
+                "helper":       "acceptance/helper.rb",
+                "options_file": "acceptance/options/openvox.rb"
               }
             vms: |-
               [
