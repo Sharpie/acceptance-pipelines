@@ -38,15 +38,6 @@ on:
         required: true
         type: string
         default: main
-      openvox-agent-ref:
-        description: |-
-          (Openvox-Agent Ref) The git ref of the openvox-agent
-          acceptance suite to run.
-
-          (see openvox-ref for details)
-        required: true
-        type: string
-        default: main
       openvox-server-ref:
         description: |-
           (Openvox-Server Ref) The git ref of the openvox-server
@@ -151,10 +142,10 @@ jobs:
                 }
               ]
           - name: openvox-agent
-            ref: ${{ inputs.openvox-agent-ref }}
+            ref: ${{ inputs.openvox-agent }}
             install-openvox-server: false
             install-openvoxdb: false
-            acceptance-working-dir: 'acceptance'
+            acceptance-working-dir: 'packaging/acceptance'
             acceptance-pre-suite: |-
               [
                 "pre-suite/configure_type_defaults.rb"
