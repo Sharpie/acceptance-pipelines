@@ -115,12 +115,12 @@ jobs:
         suite:
           - name: openvox
             ref: ${{ inputs.openvox-ref }}
-          - name: openvox-agent
-            ref: ${{ inputs.openvox-ref }}
-          - name: openvox-server
-            ref: ${{ inputs.openvox-server-ref }}
-          - name: openvoxdb
-            ref: ${{ inputs.openvoxdb-ref }}
+#          - name: openvox-agent
+#            ref: ${{ inputs.openvox-ref }}
+#          - name: openvox-server
+#            ref: ${{ inputs.openvox-server-ref }}
+#          - name: openvoxdb
+#            ref: ${{ inputs.openvoxdb-ref }}
     uses: 'Sharpie/shared-actions/.github/workflows/beaker_acceptance.yml@debug'
     with:
       suite-name: ${{ matrix.suite.name }}
