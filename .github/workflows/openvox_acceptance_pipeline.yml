@@ -122,6 +122,9 @@ jobs:
 #          - name: openvoxdb
 #            ref: ${{ inputs.openvoxdb-ref }}
     uses: 'Sharpie/shared-actions/.github/workflows/beaker_acceptance.yml@debug'
+    secrets:
+      NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      SSH_PASS: ${{ secrets.SSH_PASS }}
     with:
       suite-name: ${{ matrix.suite.name }}
       ref: ${{ matrix.suite.ref }}
