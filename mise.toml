@@ -1,0 +1,36 @@
+# This release graduated the Ruby "compile" setting
+# out of experimental status.
+min_version = "2026.2.8"
+
+[tools]
+ruby      = "3.3"
+terraform = "1.15"
+
+# Use pre-compiled ruby binaries, instead of building from source.
+[settings.ruby]
+compile = false
+
+# Auto-add local binstubs.
+[env]
+_.path = ["./bin"]
+BOLT_GEM    = "true"
+BUNDLE_PATH = "./vendor"
+
+
+# === Bolt Operations ===
+[tasks.bundle-install]
+run     = ["bundle install", "bundle binstubs openbolt rake"]
+sources = ["Gemfile"]
+
+[tasks.bolt-module-install]
+run     = "bolt module install --force"
+sources = ["Boltdir/bolt-project.yaml"]
+depends = ["bundle-install"]
+
+[tasks.bolt]
+run     = "bolt"
+depends = ["bolt-module-install"]
+
+[tasks.rake]
+run     = "rake"
+depends = ["bundle-install"]
