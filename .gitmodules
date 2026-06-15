@@ -1,0 +1,4 @@
+[submodule "Boltdir"]
+	path   = Boltdir
+	url    = https://github.com/jpartlow/kvm_automation_tooling
+  ignore = dirty
