@@ -136,7 +136,7 @@ jobs:
             ref: ${{ inputs.openvox-server-ref }}
           - name: openvoxdb
             ref: ${{ inputs.openvoxdb-ref }}
-    uses: 'openvoxproject/shared-actions/.github/workflows/beaker_acceptance.yml@main'
+    uses: 'Sharpie/shared-actions/.github/workflows/beaker_acceptance.yml@tests-from-platforms'
     with:
       suite-name: ${{ matrix.suite.name }}
       ref: ${{ matrix.suite.ref }}
